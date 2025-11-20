@@ -143,6 +143,26 @@ func TestBranchingAndMerge(t *testing.T) {
 	}
 }
 
+func TestAttackSimulationTamperedReplacement(t *testing.T) {
+	chain := NewChain()
+	_, _ = chain.AddBlock("legit-1")
+	_, _ = chain.AddBlock("legit-2")
+	original := chain.Blocks()
+
+	attackerChain := extendWithData(chain.Blocks(), "attacker-1", "attacker-2")
+	attackerChain[2].PreviousHash = "forged"
+
+	if ok := chain.Replace(attackerChain); ok {
+		t.Fatalf("expected tampered chain to be rejected")
+	}
+	if gotLen := len(chain.Blocks()); gotLen != len(original) {
+		t.Fatalf("chain length changed after rejected attack: %d", gotLen)
+	}
+	if chain.Latest().Data != "legit-2" {
+		t.Fatalf("chain tip mutated after rejected attack")
+	}
+}
+
 func extend(blocks []Block, count int) []Block {
 	copySlice := append([]Block(nil), blocks...)
 	prev := copySlice[len(copySlice)-1]
